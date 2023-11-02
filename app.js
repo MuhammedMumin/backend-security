@@ -37,11 +37,13 @@ app.use(passport.session());
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true });
 
 const userSchema = new mongoose.Schema ({
-    email: String,
-    password: String,
-    googleId: String,
-    secret: String
+  email: String,
+  password: String,
+  googleId: String,
+  secret: String,
+  username: String, // Make username field optional
 });
+
 
 userSchema.plugin(passportLocalMongoose);
 userSchema.plugin(findOrCreate)
@@ -64,20 +66,30 @@ passport.serializeUser(function(user, done) {
       });
   });
 
-passport.use(new GoogleStrategy({
+  passport.use(new GoogleStrategy({
     clientID: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
     callbackURL: "http://localhost:5000/auth/google/secrets",
     userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo"
   },
-  function(accessToken, refreshToken, profile, cb) {
-    console.log(profile);
+  async (accessToken, refreshToken, profile, cb) => {
+    try {
+      let user = await User.findOne({ googleId: profile.id });
 
-    User.findOrCreate({ googleId: profile.id }, function (err, user) {
-      return cb(err, user);
-    });
+      if (!user) {
+        // Create a new user with an optional username field
+        user = new User({ googleId: profile.id });
+      }
+
+      user.username = profile.displayName; // Use Google profile's displayName as username
+      await user.save();
+      return cb(null, user);
+    } catch (err) {
+      return cb(err);
+    }
   }
 ));
+
 
 app.get("/", function(req, res){
     res.render("home")
