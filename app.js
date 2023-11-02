@@ -33,7 +33,8 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-mongoose.connect("mongodb://0.0.0.0:27017/userDB", {useNewUrlParser: true});
+// mongoose.connect("mongodb://0.0.0.0:27017/userDB", {useNewUrlParser: true});
+mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true });
 
 const userSchema = new mongoose.Schema ({
     email: String,
@@ -197,6 +198,6 @@ app.post('/login', function (req, res) {
 
 
 
-app.listen(5000, function() {
+app.listen(process.env.PORT || 5000, function() {
     console.log("Server started on port 5000.");
 });
